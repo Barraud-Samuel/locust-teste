@@ -1,33 +1,19 @@
-from locust import HttpLocust, TaskSet
-import os
-
-
-def factory(uri):
-    def _locust(locust):
-        locust.client.get(uri)
-    return _locust
-
-
-num, mytasks = 1, {}
-while os.getenv('URI'+str(num)):
-    mytasks[factory(os.getenv('URI'+str(num)))] = 1
-    num += 1
-
-
-def index(l):
-    l.client.get('/')
-
-
-if mytasks == {}:
-    mytasks = {index: 1}
-
-
-class TestCase(TaskSet):
-    tasks = mytasks
-
-
+from locust import HttpLocust, TaskSet, task
+class UserBehavior(TaskSet):
+    def on_start(self):
+        """ on_start is called when a Locust start before
+            any task is scheduled
+        """
+        self.login()
+    def login(self):
+        self.client.get("/")
+    @task(2)
+    def index(self):
+        self.client.get("/")
+    @task(1)
+    def profile(self):
+        self.client.get("/")
 class WebsiteUser(HttpLocust):
-    task_set = TestCase
-    host = os.getenv('HOSTNAME')
-    min_wait = int(os.getenv('MIN_WAIT')) if os.getenv('MIN_WAIT') else 5000
-    max_wait = int(os.getenv('MAX_WAIT')) if os.getenv('MAX_WAIT') else 15000
+    task_set = UserBehavior
+    min_wait = 5000
+    max_wait = 9000
